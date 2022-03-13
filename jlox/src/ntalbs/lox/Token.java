@@ -1,4 +1,4 @@
-package ntalbs;
+package ntalbs.lox;
 
 public class Token {
   final TokenType type;

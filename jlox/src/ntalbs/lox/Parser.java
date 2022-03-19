@@ -17,6 +17,7 @@ import static ntalbs.lox.TokenType.NIL;
 import static ntalbs.lox.TokenType.NUMBER;
 import static ntalbs.lox.TokenType.PLUS;
 import static ntalbs.lox.TokenType.RIGHT_PAREN;
+import static ntalbs.lox.TokenType.SEMICOLON;
 import static ntalbs.lox.TokenType.SLASH;
 import static ntalbs.lox.TokenType.STAR;
 import static ntalbs.lox.TokenType.STRING;
@@ -30,6 +31,14 @@ public class Parser {
 
   Parser(List<Token> tokens) {
     this.tokens = tokens;
+  }
+
+  Expr parse() {
+    try {
+      return expression();
+    } catch (ParseError e) {
+      return null;
+    }
   }
 
   private Expr expression() {
@@ -107,7 +116,7 @@ public class Parser {
       consume(RIGHT_PAREN, "Expect ')' after expression");
       return new Expr.Grouping(expr);
     }
-    throw new ParseError();
+    throw error(peek(), "Expected expression.");
   }
 
   private Token consume(TokenType type, String message) {
@@ -118,6 +127,21 @@ public class Parser {
   private ParseError error(Token token, String message) {
     Lox.error(token, message);
     return new ParseError();
+  }
+
+  private void synchronize() {
+    advance();
+    while (!isAtEnd()) {
+      if (previous().type == SEMICOLON) return;
+
+      switch (peek().type) {
+        case CLASS: case FOR: case IF: case PRINT:
+        case RETURN: case VAR: case WHILE:
+          return;
+      }
+
+      advance();
+    }
   }
 
   private boolean match(TokenType... types) {

@@ -1,5 +1,6 @@
 package ntalbs.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static ntalbs.lox.TokenType.BANG;
@@ -16,6 +17,7 @@ import static ntalbs.lox.TokenType.MINUS;
 import static ntalbs.lox.TokenType.NIL;
 import static ntalbs.lox.TokenType.NUMBER;
 import static ntalbs.lox.TokenType.PLUS;
+import static ntalbs.lox.TokenType.PRINT;
 import static ntalbs.lox.TokenType.RIGHT_PAREN;
 import static ntalbs.lox.TokenType.SEMICOLON;
 import static ntalbs.lox.TokenType.SLASH;
@@ -33,12 +35,30 @@ public class Parser {
     this.tokens = tokens;
   }
 
-  Expr parse() {
-    try {
-      return expression();
-    } catch (ParseError e) {
-      return null;
+  List<Stmt> parse() {
+    List<Stmt> statements = new ArrayList<>();
+    while (!isAtEnd()) {
+      statements.add(statements());
     }
+    return statements;
+  }
+
+  private Stmt statements() {
+    if (match(PRINT)) return printStatement();
+
+    return expressionStatement();
+  }
+
+  private Stmt printStatement() {
+    Expr value = expression();
+    consume(SEMICOLON, "Expect ';' after value.");
+    return new Stmt.Print(value);
+  }
+
+  private Stmt expressionStatement() {
+    Expr expr = expression();
+    consume(SEMICOLON, "Expect ';' after expression.");
+    return new Stmt.Expression(expr);
   }
 
   private Expr expression() {

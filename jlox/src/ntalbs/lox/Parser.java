@@ -6,10 +6,12 @@ import java.util.List;
 import static ntalbs.lox.TokenType.BANG;
 import static ntalbs.lox.TokenType.BANG_EQUAL;
 import static ntalbs.lox.TokenType.EOF;
+import static ntalbs.lox.TokenType.EQUAL;
 import static ntalbs.lox.TokenType.EQUAL_EQUAL;
 import static ntalbs.lox.TokenType.FALSE;
 import static ntalbs.lox.TokenType.GREATER;
 import static ntalbs.lox.TokenType.GREATER_EQUAL;
+import static ntalbs.lox.TokenType.IDENTIFIER;
 import static ntalbs.lox.TokenType.LEFT_PAREN;
 import static ntalbs.lox.TokenType.LESS;
 import static ntalbs.lox.TokenType.LESS_EQUAL;
@@ -24,6 +26,7 @@ import static ntalbs.lox.TokenType.SLASH;
 import static ntalbs.lox.TokenType.STAR;
 import static ntalbs.lox.TokenType.STRING;
 import static ntalbs.lox.TokenType.TRUE;
+import static ntalbs.lox.TokenType.VAR;
 
 public class Parser {
   private static class ParseError extends RuntimeException {}
@@ -38,12 +41,34 @@ public class Parser {
   List<Stmt> parse() {
     List<Stmt> statements = new ArrayList<>();
     while (!isAtEnd()) {
-      statements.add(statements());
+      statements.add(declaration());
     }
     return statements;
   }
 
-  private Stmt statements() {
+  private Stmt declaration() {
+    try {
+      if (match(VAR)) return varDeclaration();
+      return statement();
+    } catch (ParseError e) {
+      synchronize();
+      return null;
+    }
+  }
+
+  private Stmt varDeclaration() {
+    Token name = consume(IDENTIFIER, "Expect variable name.");
+
+    Expr initializer = null;
+    if (match(EQUAL)) {
+      initializer = expression();
+    }
+
+    consume(SEMICOLON, "Expect ';' after variable declaration.");
+    return new Stmt.Var(name, initializer);
+  }
+
+  private Stmt statement() {
     if (match(PRINT)) return printStatement();
 
     return expressionStatement();
@@ -129,6 +154,10 @@ public class Parser {
 
     if (match(NUMBER, STRING)) {
       return new Expr.Literal(previous().literal);
+    }
+
+    if (match(IDENTIFIER)) {
+      return new Expr.Variable(previous());
     }
 
     if (match(LEFT_PAREN)) {

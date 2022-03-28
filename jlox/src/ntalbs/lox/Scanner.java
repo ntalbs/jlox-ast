@@ -173,7 +173,7 @@ public class Scanner {
   }
 
   private void identifier() {
-    while (isAlpha(peek())) advance();
+    while (isAlphaNumeric(peek())) advance();
     String text = source.substring(start, current);
     TokenType type = keywards.get(text);
     if (type == null) type = IDENTIFIER;

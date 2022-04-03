@@ -12,6 +12,7 @@ import static ntalbs.lox.TokenType.FALSE;
 import static ntalbs.lox.TokenType.GREATER;
 import static ntalbs.lox.TokenType.GREATER_EQUAL;
 import static ntalbs.lox.TokenType.IDENTIFIER;
+import static ntalbs.lox.TokenType.LEFT_BRACE;
 import static ntalbs.lox.TokenType.LEFT_PAREN;
 import static ntalbs.lox.TokenType.LESS;
 import static ntalbs.lox.TokenType.LESS_EQUAL;
@@ -20,6 +21,7 @@ import static ntalbs.lox.TokenType.NIL;
 import static ntalbs.lox.TokenType.NUMBER;
 import static ntalbs.lox.TokenType.PLUS;
 import static ntalbs.lox.TokenType.PRINT;
+import static ntalbs.lox.TokenType.RIGHT_BRACE;
 import static ntalbs.lox.TokenType.RIGHT_PAREN;
 import static ntalbs.lox.TokenType.SEMICOLON;
 import static ntalbs.lox.TokenType.SLASH;
@@ -70,8 +72,20 @@ public class Parser {
 
   private Stmt statement() {
     if (match(PRINT)) return printStatement();
+    if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
     return expressionStatement();
+  }
+
+  private List<Stmt> block() {
+    List<Stmt> statements = new ArrayList<>();
+
+    while (!check(RIGHT_BRACE) && !isAtEnd()) {
+      statements.add(declaration());
+    }
+
+    consume(RIGHT_BRACE, "Expect '}' after block.");
+    return statements;
   }
 
   private Stmt printStatement() {

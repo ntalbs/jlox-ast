@@ -3,8 +3,10 @@ package ntalbs.lox;
 import java.util.ArrayList;
 import java.util.List;
 
+import static ntalbs.lox.TokenType.AND;
 import static ntalbs.lox.TokenType.BANG;
 import static ntalbs.lox.TokenType.BANG_EQUAL;
+import static ntalbs.lox.TokenType.ELSE;
 import static ntalbs.lox.TokenType.EOF;
 import static ntalbs.lox.TokenType.EQUAL;
 import static ntalbs.lox.TokenType.EQUAL_EQUAL;
@@ -12,6 +14,7 @@ import static ntalbs.lox.TokenType.FALSE;
 import static ntalbs.lox.TokenType.GREATER;
 import static ntalbs.lox.TokenType.GREATER_EQUAL;
 import static ntalbs.lox.TokenType.IDENTIFIER;
+import static ntalbs.lox.TokenType.IF;
 import static ntalbs.lox.TokenType.LEFT_BRACE;
 import static ntalbs.lox.TokenType.LEFT_PAREN;
 import static ntalbs.lox.TokenType.LESS;
@@ -19,6 +22,7 @@ import static ntalbs.lox.TokenType.LESS_EQUAL;
 import static ntalbs.lox.TokenType.MINUS;
 import static ntalbs.lox.TokenType.NIL;
 import static ntalbs.lox.TokenType.NUMBER;
+import static ntalbs.lox.TokenType.OR;
 import static ntalbs.lox.TokenType.PLUS;
 import static ntalbs.lox.TokenType.PRINT;
 import static ntalbs.lox.TokenType.RIGHT_BRACE;
@@ -71,10 +75,25 @@ public class Parser {
   }
 
   private Stmt statement() {
+    if (match(IF)) return ifStatement();
     if (match(PRINT)) return printStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
     return expressionStatement();
+  }
+
+  private Stmt ifStatement() {
+    consume(LEFT_PAREN, "Expect '(' after 'if'.");
+    Expr condition = expression();
+    consume(RIGHT_PAREN, "Expect ')' after if condition.");
+
+    Stmt thenBranch = statement();
+    Stmt elseBranch = null;
+    if (match(ELSE)) {
+      elseBranch = statement();
+    }
+
+    return new Stmt.If(condition, thenBranch, elseBranch);
   }
 
   private List<Stmt> block() {
@@ -105,7 +124,7 @@ public class Parser {
   }
 
   private Expr assignment() {
-    Expr expr = equality();
+    Expr expr = or();
 
     if (match(EQUAL)) {
       Token equals = previous();
@@ -120,6 +139,31 @@ public class Parser {
     }
     return expr;
   }
+
+  private Expr or() {
+    Expr expr = and();
+
+    while (match(OR)) {
+      Token operator = previous();
+      Expr right = and();
+      expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
+  private Expr and() {
+    Expr expr = equality();
+
+    while (match(AND)) {
+      Token operator = previous();
+      Expr right = equality();
+      expr = new Expr.Logical(expr, operator, right);
+    }
+
+    return expr;
+  }
+
 
   private Expr equality() {
     Expr expr = comparison();

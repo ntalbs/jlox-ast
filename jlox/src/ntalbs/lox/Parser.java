@@ -7,12 +7,14 @@ import java.util.List;
 import static ntalbs.lox.TokenType.AND;
 import static ntalbs.lox.TokenType.BANG;
 import static ntalbs.lox.TokenType.BANG_EQUAL;
+import static ntalbs.lox.TokenType.COMMA;
 import static ntalbs.lox.TokenType.ELSE;
 import static ntalbs.lox.TokenType.EOF;
 import static ntalbs.lox.TokenType.EQUAL;
 import static ntalbs.lox.TokenType.EQUAL_EQUAL;
 import static ntalbs.lox.TokenType.FALSE;
 import static ntalbs.lox.TokenType.FOR;
+import static ntalbs.lox.TokenType.FUN;
 import static ntalbs.lox.TokenType.GREATER;
 import static ntalbs.lox.TokenType.GREATER_EQUAL;
 import static ntalbs.lox.TokenType.IDENTIFIER;
@@ -57,12 +59,32 @@ public class Parser {
 
   private Stmt declaration() {
     try {
+      if (match(FUN)) return function("function");
       if (match(VAR)) return varDeclaration();
       return statement();
     } catch (ParseError e) {
       synchronize();
       return null;
     }
+  }
+
+  private Stmt function(String kind) {
+    Token name = consume(IDENTIFIER, "Expect " + kind + " name.");
+    consume(LEFT_PAREN, "Expect '(' after " + kind + " name.");
+    List<Token> parameters = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (parameters.size() >= 255) {
+          error(peek(), "Cannot have more than 255 parameters.");
+        }
+        parameters.add(consume(IDENTIFIER, "Expect parameter name."));
+      } while (match(COMMA));
+    }
+    consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+    consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+    List<Stmt> body = block();
+    return new Stmt.Function(name, parameters, body);
   }
 
   private Stmt varDeclaration() {
@@ -273,7 +295,37 @@ public class Parser {
         return new Expr.Unary(operator, right);
       }
 
-      return primary();
+      return call();
+  }
+
+  private Expr call() {
+    Expr expr = primary();
+
+    while (true) {
+      if (match(LEFT_PAREN)) {
+        expr = finishCall(expr);
+      } else {
+        break;
+      }
+    }
+
+    return expr;
+  }
+
+  private Expr finishCall(Expr callee) {
+    List<Expr> arguments = new ArrayList<>();
+    if (!check(RIGHT_PAREN)) {
+      do {
+        if (arguments.size() >= 255) {
+          error(peek(), "Cannot have more than 255 arguments.");
+        }
+        arguments.add(expression());
+      } while (match(COMMA));
+    }
+
+    Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+    return new Expr.Call(callee, paren, arguments);
   }
 
   private Expr primary() {

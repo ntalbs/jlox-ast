@@ -29,6 +29,7 @@ import static ntalbs.lox.TokenType.NUMBER;
 import static ntalbs.lox.TokenType.OR;
 import static ntalbs.lox.TokenType.PLUS;
 import static ntalbs.lox.TokenType.PRINT;
+import static ntalbs.lox.TokenType.RETURN;
 import static ntalbs.lox.TokenType.RIGHT_BRACE;
 import static ntalbs.lox.TokenType.RIGHT_PAREN;
 import static ntalbs.lox.TokenType.SEMICOLON;
@@ -104,9 +105,21 @@ public class Parser {
     if (match(WHILE)) return whileStatement();
     if (match(FOR)) return forStatement();
     if (match(PRINT)) return printStatement();
+    if (match(RETURN)) return returnStatement();
     if (match(LEFT_BRACE)) return new Stmt.Block(block());
 
     return expressionStatement();
+  }
+
+  private Stmt returnStatement() {
+    Token keyword = previous();
+    Expr value = null;
+    if (!check(SEMICOLON)) {
+      value = expression();
+    }
+
+    consume(SEMICOLON, "Expect ';' after return value.");
+    return new Stmt.Return(keyword, value);
   }
 
   private Stmt ifStatement() {

@@ -32,6 +32,10 @@ public class Lox {
   }
 
   private static void runPrompt() throws IOException {
+    System.out.println("jlox 0.0.1");
+    System.out.println("Ctrl+D to exit.");
+    System.out.println();
+
     InputStreamReader input = new InputStreamReader(System.in);
     BufferedReader reader = new BufferedReader(input);
     for (;;) {
